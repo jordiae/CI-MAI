@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MF0 version="1.1" defaultPackage="slid" packageUris="http://schema.mathworks.com/mf0/slid/20171023 http://schema.mathworks.com/mf0/slid/20171023/slid">
+  <System type="System" uuid="af8cc0ed-157b-43cd-8490-d8df23f81417">
+    <Parameter type="Parameter" uuid="9713cc0b-ee03-49cf-adec-9d26f8dec56f">
+      <Identifier>J</Identifier>
+      <Name>J</Name>
+    </Parameter>
+    <Parameter type="Parameter" uuid="d7e3854f-3f10-4925-a449-ceaf06697c92">
+      <Identifier>L</Identifier>
+      <Name>L</Name>
+    </Parameter>
+    <Parameter type="Parameter" uuid="236a7870-32f1-42c2-a107-35ccf1265953">
+      <Identifier>c</Identifier>
+      <Name>c</Name>
+    </Parameter>
+    <Parameter type="Parameter" uuid="4ce4ea04-9eab-4c6b-b152-c15541a74aa7">
+      <Identifier>d</Identifier>
+      <Name>d</Name>
+    </Parameter>
+    <Parameter type="Parameter" uuid="c2c1fce1-09dd-41d1-b61b-2766686f58fc">
+      <Identifier>g</Identifier>
+      <Name>g</Name>
+    </Parameter>
+    <Parameter type="Parameter" uuid="5efe4f3a-b3ca-4d2f-b398-38ef61b2dda9">
+      <Identifier>m</Identifier>
+      <Name>m</Name>
+    </Parameter>
+    <Interface type="Interface" uuid="c4d2baf8-1787-4115-b7d8-5b27df63edaa"/>
+  </System>
+</MF0>

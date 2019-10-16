@@ -1,5 +1,5 @@
 [System]
-Name='pendulum_controller'
+Name='pendulum_controller_5_output'
 Type='mamdani'
 Version=2.0
 NumInputs=2
@@ -30,13 +30,15 @@ MF3='Increasing':'trimf',[0 2 5]
 [Output1]
 Name='Thrust'
 Range=[-25 25]
-NumMFs=3
-MF1='Negative':'trimf',[-25 -12.5 -0.0006152]
-MF2='Neutral':'trimf',[-12.5 0 12.5]
-MF3='Positive':'trimf',[0.0006152 12.5 25]
+NumMFs=5
+MF1='Negative':'trimf',[-16.66 -8.33 0]
+MF2='Neutral':'trimf',[-8.33 0 8.33]
+MF3='Positive':'trimf',[0 8.33 16.66]
+MF4='VeryNegative':'trimf',[-25 -16.66 -8.33]
+MF5='VeryPositive':'trimf',[8.33 16.66 25]
 
 [Rules]
-1 1, 1 (1) : 1
+1 1, 4 (1) : 1
 1 2, 1 (1) : 1
 1 3, 2 (1) : 1
 2 1, 1 (1) : 1
@@ -44,4 +46,4 @@ MF3='Positive':'trimf',[0.0006152 12.5 25]
 2 3, 3 (1) : 1
 3 1, 2 (1) : 1
 3 2, 3 (1) : 1
-3 3, 3 (1) : 1
+3 3, 5 (1) : 1
