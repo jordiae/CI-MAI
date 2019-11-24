@@ -18,6 +18,22 @@ network.trainParam.min_grad = 1e-5;
 hiddenTransferFcn = 'logsig';
 divideFcn = 'dividerand';
 
+
+bestAccuracyLrMc = 0;
+bestLr;
+bestMc;
+for lr = [0.1 0.01 0.001] % default: 0.01
+    for mc = [9 0.9 0.09] % default: 0.9
+       net = createNet(seed, nHiddenUnits, hiddenTransferFcn,...
+                    outputTransferFcn, performFcn, trainRatio, valRatio, testRatio, divideFcn, trainFcn, epochs, max_fail,...
+                    max_fail, min_grad, mc, lr);
+                %[net,tr,Y,E] = train(net, normalizedX, encodedY);
+                [net,tr,Y,E] = train(net, transpose(data.X), encodedY);
+                totalAccuracy = totalAccuracy + getAccuracy(Y(:,tr.testInd), encodedY(:,tr.testInd));
+        
+    end
+end
+return;
 results = [];
 
 
@@ -29,29 +45,17 @@ for outputTransferFcn_performFcn = {{'logsig', 'mse'}; {'softmax', 'crossentropy
             trainRatio = train_val_test_ratio{1}(1);
             valRatio = train_val_test_ratio{1}(2);
             testRatio = train_val_test_ratio{1}(3);
-            bestAccuracy = 0;
-            for lr = [0.1 0.01 0.001] % default: 0.01
-                for mc = [9 0.9 0.09] % default: 0.9
-                    totalAccuracy = 0;
-                    for seed = [1, 2, 3]
-                        net = createNet(seed, nHiddenUnits, hiddenTransferFcn,...
-                            outputTransferFcn, performFcn, trainRatio, valRatio, testRatio, divideFcn, trainFcn, epochs, max_fail,...
-                            max_fail, min_grad, mc, lr);
-                        %[net,tr,Y,E] = train(net, normalizedX, encodedY);
-                        [net,tr,Y,E] = train(net, transpose(data.X), encodedY);
-                        totalAccuracy = totalAccuracy + getAccuracy(Y(:,tr.testInd), encodedY(:,tr.testInd));
-                    end
-                    meanAccuracy = totalAccuracy/3;
-                    if meanAccuracy > bestAccuracy
-                        bestAccuracy = meanAccuracy;
-                    end
-                    append(results, [nHiddenUnits, hiddenTransferFcn,...
-                            outputTransferFcn, performFcn, trainRatio, valRatio, testRatio, divideFcn, trainFcn, epochs,...
-                            max_fail, min_grad, mc, lr]);
-                end
-                
-                
+            
+            totalAccuracy = 0;
+            for seed = [1, 2, 3]
+                net = createNet(seed, nHiddenUnits, hiddenTransferFcn,...
+                    outputTransferFcn, performFcn, trainRatio, valRatio, testRatio, divideFcn, trainFcn, epochs, max_fail,...
+                    max_fail, min_grad, mc, lr);
+                %[net,tr,Y,E] = train(net, normalizedX, encodedY);
+                [net,tr,Y,E] = train(net, transpose(data.X), encodedY);
+                totalAccuracy = totalAccuracy + getAccuracy(Y(:,tr.testInd), encodedY(:,tr.testInd));
             end
+            meanAccuracy = totalAccuracy/3;
             
             
         end
