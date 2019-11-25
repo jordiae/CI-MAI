@@ -1,0 +1,252 @@
+dataURL = 'https://people.cs.umass.edu/~marlin/data/caltech101_silhouettes_28.mat';
+filename = 'caltech101_silhouettes_28.mat';
+outfilename = websave(filename, dataURL);
+data = load(outfilename);
+
+columnMeans = mean(data.X, 1);
+varMeans = var(data.X, 1);
+normalizedX = transpose(normalize(double(data.X)));
+encodedY = transpose(encodeOneHot(data.Y));
+columnMeansNor = mean(data.X, 1);
+varMeansNor = var(data.X, 1);
+
+trainFcn= 'traingdx';
+epochs = 1000;
+max_fail = 6;
+min_grad = 1e-5;
+network.trainParam.min_grad = 1e-5;
+
+hiddenTransferFcn = 'logsig';
+outputTransferFcns = ["logsig", "softmax"];
+performFcns = ["mse", "crossentropy"];
+divideFcn = 'dividerand';
+trainRatios = [0.8, 0.1, 0.1];
+valRatios = [0.4, 0.2, 0.4];
+testRatios = [0.1, 0.1, 0.8];
+
+
+% nHiddenUnits = 50;
+% seed = 5;
+% trainRatio = 0.34;
+% valRatio = 0.33;
+% testRatio = 0.33;
+% bestAccuracyLrMc = 0;
+% bestLr = 0;
+% bestMc = 0;
+% for lr = [0.1 0.01 0.001] % default: 0.01
+%     for mc = [0.9 0.09 0.009] % default: 0.9
+%         sumAccuracy = 0;
+%         for outputTransferFcn_performFcn = {{'logsig', 'mse'}; {'softmax', 'crossentropy'}}
+%             outputTransferFcn = outputTransferFcn_performFcn{1}{1};
+%             performFcn = outputTransferFcn_performFcn{1}{2};
+%        net = createNet(seed, nHiddenUnits, hiddenTransferFcn,...
+%                     outputTransferFcn, performFcn, trainRatio, valRatio, testRatio, divideFcn, trainFcn, epochs, max_fail,...
+%                     min_grad, mc, lr);
+%             [net,tr,Y,E] = train(net, transpose(data.X), encodedY);
+%             newAccuracy = getAccuracy(Y(:,tr.testInd), encodedY(:,tr.testInd));
+%             sumAccuracy = sumAccuracy + newAccuracy;
+%         end
+%         meanAccuracy = sumAccuracy/2;
+%         if meanAccuracy > bestAccuracyLrMc
+%             bestAccuracyLrMc = meanAccuracy;
+%             bestLr = lr;
+%             bestMc = mc;
+%         end 
+%     end
+% end
+% bestAccuracyLrMc
+% bestLr
+% bestMc
+% return;
+lr = 0.1;
+mc = 0.9;
+
+
+
+varNames = ["outputTransferFnc", "hiddenTansferFnc" "performFnc", "nHiddenUnits", "trainRatio", "valRatio", "testRatio", "divideFnc", "trainFnc", "epochs", "max_fail", "min_grad", "mc", "lr","accuracy"];
+varTypes = ["string","string","string","double","double","double","double","string","string","double","double","double","double","double","double"];
+sz = [18 15];
+results = table('Size',sz,'VariableTypes',varTypes,'VariableNames',varNames);
+i = 1;
+for outputTransferFcn_performFcn = 1:length(outputTransferFcns)
+    outputTransferFcn = outputTransferFcns(outputTransferFcn_performFcn);
+    performFcn = performFcns(outputTransferFcn_performFcn);
+    for nHiddenUnits = [50, 200, 500]
+        for train_val_test_ratio = 1:length()
+            disp(outputTransferFcn)
+            disp(performFcn)
+            disp(nHiddenUnits)
+            disp('======================')
+%             trainRatio = train_val_test_ratio{1}(1);
+%             valRatio = train_val_test_ratio{1}(2);
+%             testRatio = train_val_test_ratio{1}(3);
+%             
+%             totalAccuracy = 0;
+%             for seed = [1, 2, 3]
+%                 net = createNet(seed, nHiddenUnits, hiddenTransferFcn,...
+%                     outputTransferFcn, performFcn, trainRatio, valRatio, testRatio, divideFcn, trainFcn, epochs, max_fail,...
+%                     min_grad, mc, lr);
+%                 %[net,tr,Y,E] = train(net, normalizedX, encodedY);
+%                 [net,tr,Y,E] = train(net, transpose(data.X), encodedY);
+%                 totalAccuracy = totalAccuracy + getAccuracy(Y(:,tr.testInd), encodedY(:,tr.testInd));
+%             end
+%             meanAccuracy = totalAccuracy/3;
+%             results(i, :) = {outputTransferFcn, hiddenTransferFcn, performFcn, nHiddenUnits, trainRatio, valRatio, testRatio, divideFcn, trainFcn, epochs, max_fail, min_grad, mc, lr, meanAccuracy }
+%             i = i + 1;
+        end
+            
+    end
+end
+table2latex(results, 'Latex_results.txt');
+
+
+function oneHotEncoding = encodeOneHot(values)
+    oneHotEncoding = zeros(length(values), 101);
+    for i = 1:1:length(values)
+        label = values(i);
+        one = double([1:101] == label);
+        oneHotEncoding(i, :) = one; 
+    end
+end
+
+function accuracy = getAccuracy(labelsTrue, labelsPred)
+    correct_outputs = 0;
+    for r = 1:length(labelsPred)
+        [~, output_label] = max(labelsPred(:, r));
+        [~, test_label] = max(labelsTrue(:, r));
+        if output_label == test_label
+            correct_outputs = correct_outputs + 1;
+        end
+    end
+    accuracy = correct_outputs/length(labelsPred);
+end
+
+
+function network = createNet(seed, nHiddenUnits, hiddenTransferFcn,...
+    outputTransferFcn, performFcn, trainRatio, valRatio, testRatio, divideFcn, trainFcn,...
+    epochs, max_fail, min_grad, mc, lr)
+
+    rng(seed);
+    % number of hidden units
+    network = feedforwardnet([nHiddenUnits]);
+    % transfer functions
+    network.layers{1}.transferFcn = hiddenTransferFcn;
+    network.layers{2}.transferFcn = outputTransferFcn;
+    % cost function
+    network.performFcn = performFcn;
+    % percentage of train, valid, test
+    network.divideFcn = divideFcn;
+    network.divideParam.trainRatio = trainRatio;
+    network.divideParam.valRatio = valRatio;
+    network.divideParam.testRatio = testRatio;
+    % train function
+    network.trainFcn = trainFcn;
+    % momentum
+    if exist('mc', 'var')
+        network.trainParam.mc = mc;
+    end
+    
+    % learning rate
+    if exist('lr', 'var')
+        network.trainParam.lr = lr;
+    end
+    
+    network.trainParam.max_fail = max_fail; % validation check parameter
+    network.trainParam.epochs = epochs; % number of epochs parameter
+    if exist('min_grad', 'var')
+        network.trainParam.min_grad = min_grad; % minimum performance gradient
+    end
+    
+    network.outputs{end}.processFcns = {};
+    
+            
+    
+end
+
+% ----------------------------------------------------------------------- %
+% Function table2latex(T, filename) converts a given MATLAB(R) table into %
+% a plain .tex file with LaTeX formatting.                                %
+%                                                                         %
+%   Input parameters:                                                     %
+%       - T:        MATLAB(R) table. The table should contain only the    %
+%                   following data types: numeric, boolean, char or string.
+%                   Avoid including structs or cells.                     %
+%       - filename: (Optional) Output path, including the name of the file.
+%                   If not specified, the table will be stored in a       %
+%                   './table.tex' file.                                   %  
+% ----------------------------------------------------------------------- %
+%   Example of use:                                                       %
+%       LastName = {'Sanchez';'Johnson';'Li';'Diaz';'Brown'};             %
+%       Age = [38;43;38;40;49];                                           %
+%       Smoker = logical([1;0;1;0;1]);                                    %
+%       Height = [71;69;64;67;64];                                        %
+%       Weight = [176;163;131;133;119];                                   %
+%       T = table(Age,Smoker,Height,Weight);                              %
+%       T.Properties.RowNames = LastName;                                 %
+%       table2latex(T);                                                   %                                       
+% ----------------------------------------------------------------------- %
+%   Version: 1.1                                                          %
+%   Author:  Victor Martinez Cagigal                                      %
+%   Date:    09/10/2018                                                   %
+%   E-mail:  vicmarcag (at) gmail (dot) com                               %
+% ----------------------------------------------------------------------- %
+function t2l = table2latex(T, filename)
+    t2l = 0;
+    % Error detection and default parameters
+    if nargin < 2
+        filename = 'table.tex';
+        fprintf('Output path is not defined. The table will be written in %s.\n', filename); 
+    elseif ~ischar(filename)
+        error('The output file name must be a string.');
+    else
+        if ~strcmp(filename(end-3:end), '.tex')
+            filename = [filename '.tex'];
+        end
+    end
+    if nargin < 1, error('Not enough parameters.'); end
+    if ~istable(T), error('Input must be a table.'); end
+    
+    % Parameters
+    n_col = size(T,2);
+    col_spec = [];
+    for c = 1:n_col, col_spec = [col_spec 'l']; end
+    col_names = strjoin(T.Properties.VariableNames, ' & ');
+    row_names = T.Properties.RowNames;
+    if ~isempty(row_names)
+        col_spec = ['l' col_spec]; 
+        col_names = ['& ' col_names];
+    end
+    
+    % Writing header
+    fileID = fopen(filename, 'w');
+    fprintf(fileID, '\\begin{tabular}{%s}\n', col_spec);
+    fprintf(fileID, '%s \\\\ \n', col_names);
+    fprintf(fileID, '\\hline \n');
+    
+    % Writing the data
+    try
+        for row = 1:size(T,1)
+            temp{1,n_col} = [];
+            for col = 1:n_col
+                value = T{row,col};
+                if isstruct(value), error('Table must not contain structs.'); end
+                while iscell(value), value = value{1,1}; end
+                if isinf(value), value = '$\infty$'; end
+                temp{1,col} = num2str(value);
+            end
+            if ~isempty(row_names)
+                temp = [row_names{row}, temp];
+            end
+            fprintf(fileID, '%s \\\\ \n', strjoin(temp, ' & '));
+            clear temp;
+        end
+    catch
+        error('Unknown error. Make sure that table only contains chars, strings or numeric values.');
+    end
+    
+    % Closing the file
+    fprintf(fileID, '\\hline \n');
+    fprintf(fileID, '\\end{tabular}');
+    fclose(fileID);
+end
+
