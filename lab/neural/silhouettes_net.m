@@ -3,18 +3,12 @@ filename = 'caltech101_silhouettes_28.mat';
 outfilename = websave(filename, dataURL);
 data = load(outfilename);
 
-columnMeans = mean(data.X, 1);
-varMeans = var(data.X, 1);
-normalizedX = transpose(normalize(double(data.X)));
 encodedY = transpose(encodeOneHot(data.Y));
-columnMeansNor = mean(data.X, 1);
-varMeansNor = var(data.X, 1);
 
 trainFcn= 'traingdx';
 epochs = 1000;
 max_fail = 6;
 min_grad = 1e-5;
-network.trainParam.min_grad = 1e-5;
 
 hiddenTransferFcn = 'logsig';
 outputTransferFcns = ["logsig", "softmax"];
@@ -81,7 +75,6 @@ for outputTransferFcn_performFcn = 1:length(outputTransferFcns)
                 net = createNet(seed, nHiddenUnits, hiddenTransferFcn,...
                     outputTransferFcn, performFcn, trainRatio, valRatio, testRatio, divideFcn, trainFcn, epochs, max_fail,...
                     min_grad, mc, lr);
-                %[net,tr,Y,E] = train(net, normalizedX, encodedY);
                 [net,tr,Y,E] = train(net, transpose(data.X), encodedY);
                 totalAccuracy = totalAccuracy + getAccuracy(Y(:,tr.testInd), encodedY(:,tr.testInd));
             end
@@ -92,7 +85,7 @@ for outputTransferFcn_performFcn = 1:length(outputTransferFcns)
             
     end
 end
-table2latex(results, 'Latex_results.txt');
+%table2latex(results, 'Latex_results.txt');
 
 
 function oneHotEncoding = encodeOneHot(values)
