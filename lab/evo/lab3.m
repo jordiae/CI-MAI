@@ -1,81 +1,58 @@
 FitnessFunction = @(x)(1-x(1))^2+100*(x(2)-x(1)^2)^2;
 
+% Global parameters that we will not optimize
+opts = gaoptimset('StallGenLimit', 50);
+opts = gaoptimset(opts, 'FitnessScalingFcn', @fitscalingprop);
 
-opts = gaoptimset(opts, 'StallGenLimit', 50);
-opts = gaoptimset(opts, 'PopInitRange',[-2 -2; 2 2]);
-opts = gaoptimset(opts, 'FitnessScalingFcn',@fitscalingprop);
-rng default % rng (random number generation) for reprodurecord=[];
-
-
-record=[];
+rng default % rng (random number generation) for reproducibility
 
 
-
-
+% Values that we are going to experiment with
 population_sizes = [10, 20, 50, 100];
 n_generations = [15, 50, 150, 300];
 initial_ranges = [5, 2, 1.5]; % 5 -> [-5 -5; 5 5]
-selections = ["selectionstochun", "selectionremainder", "selectionuniform", "selectionroulette", "selectiontournament"];
-sel = [selectionroulette]
-reproductions = 0:0.1:1; % de 0 a 1
+selection_names = ['selectionstochunif', 'selectionremainder', 'selectionuniform', 'selectionroulette', 'selectiontournament'];
+selection_funcs = {@selectionstochunif, @selectionremainder, @selectionuniform, @selectionroulette, @selectiontournament};
+reproductions = 0:0.2:1;
+
+% We are going to store all the results in a table
+varNames = ["Population", "NGenerations", "InitialRange", "Selection", "Reproduction", "FVal"];
+varTypes = ["double", "double", "double", "string", "double", "double"];
+sz = [5*4*4*3*6 6];
+results = table('Size', sz, 'VariableTypes', varTypes, 'VariableNames', varNames);
 
 
-varNames = ["Population", "generations", "initialRange", "selection", "reproduction"];
-varTypes = ["double","double","double","string","double"];
-sz = [5 5];
-results_selection = table('Size',sz,'VariableTypes',varTypes,'VariableNames',varNames);
-
-%% We will start by trying the selections (greedy). we can fix the other variable parameters to the
-%% middle point of the values that we are going to test (with a bias towards the lowest one for computational
-%% constraints), but with functions we cannot fix the "middle point"
-
-
-population_size = 45;
-n_generation = 100;
-ir = 2;
-reproduction = 0.5;
-opts = gaoptimset(opts, 'PopulationSize', population_size);
-opts = gaoptimset(opts, 'Generations', n_generation);
-opts = gaoptimset(opts, 'PopInitRange', [-ir -ir; ir ir]);
-opts = gaoptimset(opts, 'CrossoverFraction', reproduction);
-table_i = 0;
-for select_index = 1:length(n_generations)
-    select_method = selections(select_index);
-    display(select_method)
-    opts = gaoptimset(opts, 'SelectionFcn', select_method);
-    record=[];
-    for rep=1:1:10
-        rng default % rng (random number generation) for reprodurecord=[];
-        [x, fval]=ga(FitnessFunction,2,[],[],[],[],[],[],[],opts);
-        record = [record; fval];
+i = 0;
+for p = 1:length(population_sizes)
+    population_size = population_sizes(p);
+    for g = 1:length(n_generations)
+        n_generation = n_generations(g);
+        for ir = 1:length(initial_ranges)
+            initial_range = initial_ranges(ir);
+            for s = 1:length(selection_funcs)
+                selection_func = selection_funcs(s);
+                selection_name = selection_names(s);
+                for r = reproductions
+                    i = i + 1;
+                    reproduction = r;
+                    opts = gaoptimset('StallGenLimit', 50);
+                    opts = gaoptimset(opts, 'FitnessScalingFcn', @fitscalingprop);
+                    opts = gaoptimset(opts, 'PopulationSize', population_size);
+                    opts = gaoptimset(opts, 'Generations', n_generation);
+                    opts = gaoptimset(opts, 'PopInitRange', [-initial_range -initial_range; initial_range initial_range]);
+                    opts = gaoptimset(opts, 'SelectionFcn', selection_func);
+                    opts = gaoptimset(opts, 'CrossoverFraction', reproduction);
+                    rng default % rng (random number generation) for reproducibility
+                    total = 0;
+                    for j = 1:3
+                        [x, fval]=ga(FitnessFunction,2,[],[],[],[],[],[],[],opts);
+                        total = total + fval;
+                    end
+                    avg = total/3;
+                    results(i, :) = {population_size, n_generation, initial_range, selection_name, reproduction, avg};
+                end
+            end
+        end
     end
-    results(table_i, :) = {population_size, n_generation, ir, select_method, reproduction}
-    table_i = table_i + 1
 end
-% 
-% for n=0:inter:1
-%     opts = gaoptissssmset(opts,'CrossoverFraction',n);
-%     [x, fval]=ga(FitnessFunction,2,[],[],[],[],[],[],[],opts);
-%     
-%     
-% end
-% reprodurecord = record;
-% i = 0;
-% for rep=1:1:20
-%     rng default % rng (random number generation) for reprodurecord=[];
-%     record=[];
-%     for n=0:inter:1
-%         opts = gaoptimset(opts,'CrossoverFraction',n);
-%         opts = gaoptimset(opts,'PopulationSize',20);
-%         opts = gaoptimset(opts,'Generations',150,'StallGenLimit', 100);
-%         opts = gaoptimset(opts, 'SelectionFcn',@selectiontournament, 'FitnessScalingFcn',@fitscalingprop);
-%         [x, fval]=ga(FitnessFunction,2,[],[],[],[],[],[],[],opts);
-%         record = [record; fval];
-%     end
-%     reprodurecord = reprodurecord + record;
-%     i = i + 1; 
-% end
-% avg_res = reprodurecord./i;
-% plot(0:.01:1, avg_res);
-% xlabel('Crossover Fraction');
-% ylabel('fval')
+
