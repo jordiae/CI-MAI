@@ -11,7 +11,7 @@ rng default % rng (random number generation) for reproducibility
 population_sizes = [10, 20, 50, 100];
 n_generations = [15, 50, 150, 300];
 initial_ranges = [5, 2, 1.5]; % 5 -> [-5 -5; 5 5]
-selection_names = ['selectionstochunif', 'selectionremainder', 'selectionuniform', 'selectionroulette', 'selectiontournament'];
+selection_names = ["selectionstochunif", "selectionremainder", "selectionuniform", "selectionroulette", "selectiontournament"];
 selection_funcs = {@selectionstochunif, @selectionremainder, @selectionuniform, @selectionroulette, @selectiontournament};
 reproductions = 0:0.2:1;
 
